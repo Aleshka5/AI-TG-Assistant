@@ -8,6 +8,11 @@ from config import TOKEN, keyboard_hi, keyboard_admin,limit_text_len
 telebot.apihelper.ENABLE_MIDDLEWARE = True
 bot = telebot.TeleBot(TOKEN, parse_mode=None)
 
+def main(token):
+    telebot.apihelper.ENABLE_MIDDLEWARE = True
+    bot = telebot.TeleBot(token, parse_mode=None)
+    bot.polling()
+
 @bot.message_handler(commands=['chat'])
 def chat_welcome(message):
     '''
