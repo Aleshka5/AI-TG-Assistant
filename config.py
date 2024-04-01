@@ -1,7 +1,7 @@
 from telebot import types # для указание типов
 
 limit_text_len = 3000
-TOKEN = '6605355751:AAFVG5CGrn2DBMHQZG7gLodTAshtYlk-5yw'
+TOKEN = 'xxxxx'
 
 interview_columns = ['quest1','quest2','quest3','quest4','quest5',
                'extraquest1','extraquest2','extraquest3','extraquest4','extraquest5',

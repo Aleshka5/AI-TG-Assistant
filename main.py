@@ -158,6 +158,9 @@ def bot_start(token):
 
     bot.polling()
 
+def main():
+    bot.polling()
+
 if __name__ == '__main__':
     bot_start(TOKEN)
 
