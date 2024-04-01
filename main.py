@@ -152,6 +152,9 @@ def get_any_message(message):
 
     return None
 
+def main():
+    bot.polling()
+
 if __name__ == '__main__':
     bot.polling()
 
