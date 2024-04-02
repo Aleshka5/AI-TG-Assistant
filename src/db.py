@@ -56,7 +56,7 @@ def init(cursor=None):
                         );''')
 
     cursor.execute('''INSERT INTO Employees (name, position)
-                        SELECT 'alekseyfilenkov', 'employee'
+                        SELECT 'alekseyfilenkov', 'admin'
                         WHERE NOT EXISTS (
                         SELECT 1 FROM Employees WHERE name = 'alekseyfilenkov'
                         );''')
