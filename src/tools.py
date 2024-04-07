@@ -1,7 +1,5 @@
 import secrets
 import string
-from config import CLIENT_JSON_CONFIG, START_JSON_INTERVIEW
-from src.ai_functools import get_addition_question, get_base_guestions
 
 def print_welcome(owner):
     '''
@@ -51,6 +49,7 @@ def print_no_parsed_data():
 Если вы не хотите этого, внимательно проверьте ваш запрос на соответствие формы ввода.
 '''
 
+# Not to need
 def print_interview(interview_dict: dict):
     output = []
     pipeline = ['О1', 'Д1', 'О2', 'Д2', 'О3', 'Д3', 'О4', 'Д4', 'О5', 'Д5']
@@ -74,97 +73,7 @@ def print_question(question, state):
     dict_fully_questions = {'О1':str_0, 'Д1':str_1, 'О2':str_0, 'Д2':str_1, 'О3':str_0, 'Д3':str_1, 'О4':str_0, 'Д4':str_1, 'О5':str_0, 'Д5':str_1}
     return dict_fully_questions[state]+'\n'+'Заглушка для вопроса\nВопрос: ' + question
 
-def add_new_user():
-    '''
-
-    :param user_name: Никнейм пользователя.
-    :param DATASET: Датасет, в который мы будет добавлять данные о новом пользователе.
-    :return:
-    '''
-    client_base_config = CLIENT_JSON_CONFIG.copy()
-    client_base_config['State'] = set_state('Helper')
-    return client_base_config
-
-def create_new_interview(client_data):
-    previous_queries = client_data['Queries']
-    print(previous_queries.keys())
-    for query in previous_queries.keys():
-        pass
-    print(query)
-    print(f'Создание интервью с номером {int(query)+1}')
-    previous_queries[str(int(query) + 1)] = START_JSON_INTERVIEW
-    return previous_queries, str(int(query) + 1)
-
-def fill_base_questions(cilent_interview_data):
-    new_cilent_interview_data = cilent_interview_data
-    pipeline = ['О1', 'О2', 'О3', 'О4', 'О5']
-    # TODO: заменить на генерацию вопросов
-    template_questions = get_base_guestions()
-
-    for state in range(len(pipeline)):
-        new_cilent_interview_data['AI'][pipeline[state]] = template_questions[state]
-    return new_cilent_interview_data
-
-def interview(cilent_interview_data,client_answer = None):
-    pipeline = ['О1', 'Д1', 'О2', 'Д2', 'О3', 'Д3', 'О4', 'Д4', 'О5', 'Д5']
-    new_cilent_interview_data = cilent_interview_data
-    # Если интервью только началось
-    if not bool(new_cilent_interview_data['AI'][pipeline[0]]):
-        new_cilent_interview_data = fill_base_questions(new_cilent_interview_data)
-        print(f'Заполнили основные вопросы:{new_cilent_interview_data}')
-    print(f'Изначальные данные интервью:{cilent_interview_data}')
-    # поиск первого не пройденного этапа интервью
-    for current in range(len(pipeline)):
-
-        if not bool(new_cilent_interview_data['Client'][pipeline[current]]):
-            
-            # Если мы остановились на дополнительном вопросе
-            if 'Д' in pipeline[current]:
-                if client_answer is None:
-                    break
-                new_cilent_interview_data['Client'][pipeline[current]] = client_answer
-
-            # Если мы остановились на основном вопросе
-            elif 'О' in pipeline[current]:
-                if client_answer is None:
-                    break
-                new_cilent_interview_data['Client'][pipeline[current]] = client_answer
-                new_cilent_interview_data['AI'][pipeline[current+1]] = get_addition_question(new_cilent_interview_data['Client'][pipeline[current]])
-                print(f'Ответили на доп вопрос {pipeline[current]} и выдали вопрос {print_question(new_cilent_interview_data["AI"][pipeline[current+1]],pipeline[current+1])}')
-
-            if pipeline[current] == 'Д5':
-                return new_cilent_interview_data, 'Интервью окончено'
-            else:
-                return new_cilent_interview_data, print_question(new_cilent_interview_data['AI'][pipeline[current+1]], pipeline[current+1])
-
-    if client_answer:
-        return new_cilent_interview_data, 'Интервью окончено'
-    else:
-        return new_cilent_interview_data, print_question(new_cilent_interview_data['AI'][pipeline[current]], pipeline[current])
-
-def set_state(ai_state):
-    '''
-
-    :param ai_state: Название состояния, которое нужно установить для общения с текущим клиентом:
-                    ['Interviewer','Helper','Chat','estimator']
-    :return: Возвращает конструкцию с одним включенным режимом из перечисленных.
-    '''
-    new_ai_state_config = CLIENT_JSON_CONFIG['State'].copy()
-    new_ai_state_config[ai_state] = True
-    return new_ai_state_config
-
-def get_state(ai_states: dict):
-    '''
-
-    :param ai_states: Конструкцию с одним включенным режимом из перечисленных:
-                    ['Interviewer','Helper','Chat','estimator']
-    :return: Возвращает название состояния, которое было установить для общения с текущим клиентом:
-                    ['Interviewer','Helper','Chat','estimator']
-    '''
-    for state,able in ai_states.items():
-        if able:
-            return state
-
+# TODO: переписать через хэх текущего времени
 def generate_token(length=32):
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))

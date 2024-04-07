@@ -3,10 +3,7 @@ import re
 from src import db
 from src.bot_interviewer import interview, get_interviews_titles, get_log_interview
 from src.tools import print_welcome, print_user_not_founded, print_hi_chat, print_no_parsed_data
-from config import TOKEN, keyboard_hi, keyboard_admin,limit_text_len
-
-telebot.apihelper.ENABLE_MIDDLEWARE = True
-bot = telebot.TeleBot(TOKEN, parse_mode=None)
+from config import keyboard_hi, keyboard_admin,limit_text_len
 
 def bot_start(token):
     telebot.apihelper.ENABLE_MIDDLEWARE = True
@@ -58,8 +55,7 @@ def bot_start(token):
 
         # Проверка пользователя на наличие в чёрном списке
         if not db.user_verification(owner):
-            bot.send_message(message.chat.id, "Извините, вы были заблокированы за нарушение правил. "
-                                              "Попробуйте обратиться к @alekseyfilekov")
+            bot.send_message(message.chat.id, "Извините, вы были заблокированы за нарушение правил.\nПопробуйте обратиться к @alekseyfilekov")
             return None
 
         text = message.text
@@ -72,6 +68,7 @@ def bot_start(token):
             if 'Начать новое интервью.' == text:
                 bot.send_message(message.chat.id, "Введите токен в формате:\n'Токен: xxx...xxx'")
 
+            # Проверка введённого токена для интервью
             elif 'Токен:' in text:
 
                 if db.check_token(owner,text[6:].strip()):
@@ -86,11 +83,16 @@ def bot_start(token):
 
             # Выбираем одно из прошлых интервью
             elif 'Выбрать одно из прошлых интервью.' == text:
+
                 keyboard_interviews = get_interviews_titles(owner)
+
                 if keyboard_interviews:
-                    bot.send_message(message.chat.id, 'Выбери одно из предыдущих интервью:', reply_markup=keyboard_interviews)
+                    bot.send_message(message.chat.id, 'Выбери одно из предыдущих интервью:',
+                                     reply_markup=keyboard_interviews)
+
                 else:
-                    bot.send_message(message.chat.id, 'Не найдено ни одного интервью.', reply_markup=keyboard_interviews)
+                    bot.send_message(message.chat.id, 'Не найдено ни одного интервью.',
+                                     reply_markup=keyboard_interviews)
 
             elif 'Назначить новое интервью.' == text:
                 bot.send_message(message.chat.id, "Введите имя работника в формате:\nИмя: @alekseyfilenkov")
@@ -98,8 +100,10 @@ def bot_start(token):
             elif 'Имя:' in text:
                 user_name = text[4:].strip().strip('@')
                 token = db.add_token(owner,user_name)
+
                 if token:
                     bot.send_message(message.chat.id, f"Передайте сотруднику\nToken:{token}")
+
                 else:
                     bot.send_message(message.chat.id, "Ошибка, проверьте имя и попробуйте ещё раз.")
 
@@ -110,8 +114,10 @@ def bot_start(token):
             elif 'Выбрать не законченное интервью' in text:
                 db.set_bot_state(owner, 'Interviewer')
                 question = interview(owner)
+
                 if question:
                     bot.send_message(message.chat.id, question)
+
                 else:
                     bot.send_message(message.chat.id, 'Это интервью было завершено.')
 
@@ -131,25 +137,24 @@ def bot_start(token):
 
         # Парсер сценариев для ведения интервью
         elif bot_state == 'Interviewer':
-            # Проверка текста на лимит, если не пройдена - заблокировать пользователя.
+            # Проверка текста на лимит, если не пройдена - заблокировать или предупредить пользователя.
             if len(text) > limit_text_len:
-                bot.send_message(message.chat.id, 'Вы написали очень большое сообщение.')
+                bot.send_message(message.chat.id, 'Вы написали слишком большое сообщение.')
                 db.ban_user(owner)
                 return None
 
             # Запуск функции проведения интервью
             question = interview(owner, text)
             if question:
-                print(question)
                 bot.send_message(message.chat.id, question)
-                db.select_all()
+                # db.select_all()
             else:
                 db.set_bot_state(owner, 'Assistant')
-                bot.send_message(message.chat.id, 'Интервью окончено.')
+                bot.send_message(message.chat.id, 'Интервью окончено. Спасибо за честные и развёрнутые ответы.')
 
 
         elif bot_state == 'Chat':
-            bot.send_message(message.chat.id, text)
+            bot.send_message(message.chat.id, f'Я бы вам ответил на: {text}, но в данный мемент нет связи с API.')
 
         else:
             bot.send_message(message.chat.id, print_user_not_founded())
@@ -159,5 +164,12 @@ def bot_start(token):
     bot.polling()
 
 if __name__ == '__main__':
-    bot_start(TOKEN)
+    import os
+    from pickle import load
+    if os.path.exists('TOKEN.pkl'):
+        with open('TOKEN.pkl','rb') as f:
+            TOKEN = load(f)
+        bot_start(TOKEN)
+    else:
+        print('Токен не найден...')
 

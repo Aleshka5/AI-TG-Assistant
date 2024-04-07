@@ -1,11 +1,15 @@
 import sqlite3
-import os
 from src.tools import generate_token, print_table
-from config import interview_columns
+from dataset import get_dataset_path
+from config import INTERVIEW_BLANK
+
 def db_connection(func):
     def wrapper(*args,**kwargs):
         # Выполнение некой функции
-        conn = sqlite3.connect('./dataset/my_database.db')
+        if get_dataset_path(new=False):
+            conn = sqlite3.connect(get_dataset_path())
+        else:
+            conn = sqlite3.connect(get_dataset_path(new=True))
         cursor = conn.cursor()
         response = func(*args,**kwargs,cursor=cursor)
         conn.commit()
@@ -19,10 +23,6 @@ def init(cursor=None):
     Создаёт при необходимости все нужные для работы таблицы.
     :return:
     '''
-    # my_file = Path("../dataset/my_database.db")
-    # if os.path.exists("../dataset/my_database.db"):
-    #     print('Exists')
-    #     return None
 
     # Создание таблицы Employees
     cursor.execute('''CREATE TABLE IF NOT EXISTS Employees (
@@ -38,16 +38,7 @@ def init(cursor=None):
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
                             token char(256),
                             emp_id INTEGER,
-                            quest1 TEXT, extraquest1 TEXT, 
-                            quest2 TEXT, extraquest2 TEXT, 
-                            quest3 TEXT, extraquest3 TEXT, 
-                            quest4 TEXT, extraquest4 TEXT, 
-                            quest5 TEXT, extraquest5 TEXT,
-                            ans1 TEXT, extrans1 TEXT, 
-                            ans2 TEXT, extrans2 TEXT, 
-                            ans3 TEXT, extrans3 TEXT, 
-                            ans4 TEXT, extrans4 TEXT, 
-                            ans5 TEXT, extrans5 TEXT,
+                            interview TEXT,
                             summary TEXT,
                             title char(30) DEFAULT 'Не законченное интервью',
                             interview_enable BOOL DEFAULT False,
@@ -56,7 +47,7 @@ def init(cursor=None):
                         );''')
 
     cursor.execute('''INSERT INTO Employees (name, position)
-                        SELECT 'alekseyfilenkov', 'employee'
+                        SELECT 'alekseyfilenkov', 'admin'
                         WHERE NOT EXISTS (
                         SELECT 1 FROM Employees WHERE name = 'alekseyfilenkov'
                         );''')
@@ -93,40 +84,26 @@ def check_token(user_name: str, token: str, cursor=None):
 
 @db_connection
 def set_enable_interview(token: str, cursor=None):
-    cursor.execute('''UPDATE Tokens SET interview_enable = 1 WHERE token = ?''', (token,))
+    blank_interview_log = ''.join([message + '\n' for message in INTERVIEW_BLANK])
+    cursor.execute('''UPDATE Tokens SET interview_enable = 1, interview = ? WHERE token = ?''', (blank_interview_log,token))
     return None
 
 @db_connection
 def get_active_interview(user_name: str, cursor=None):
-    cursor.execute('''SELECT Tokens.id,
-                            Tokens.ans1, Tokens.extrans1,
-                            Tokens.ans2, Tokens.extrans2,
-                            Tokens.ans3, Tokens.extrans3,
-                            Tokens.ans4, Tokens.extrans4,
-                            Tokens.ans5, Tokens.extrans5 FROM Employees INNER JOIN Tokens 
+    cursor.execute('''SELECT Tokens.id, Tokens.interview FROM Employees INNER JOIN Tokens 
                             ON Employees.id = Tokens.emp_id
                             WHERE Tokens.interview_enable = 1 AND Employees.name = ?''',(user_name,))
     response = cursor.fetchall()
-    column_names = [description[0] for description in cursor.description]
-    return response, column_names
+    print(response)
+    return response[0][0], response[0][1]
 
 @db_connection
 def get_interview(interview_id, user_name: str, cursor=None):
-    cursor.execute('''SELECT Tokens.quest1, Tokens.extraquest1,
-                            Tokens.quest2, Tokens.extraquest2,
-                            Tokens.quest3, Tokens.extraquest3,
-                            Tokens.quest4, Tokens.extraquest4,
-                            Tokens.quest5, Tokens.extraquest5,
-                            Tokens.ans1, Tokens.extrans1,
-                            Tokens.ans2, Tokens.extrans2,
-                            Tokens.ans3, Tokens.extrans3,
-                            Tokens.ans4, Tokens.extrans4,
-                            Tokens.ans5, Tokens.extrans5 FROM Employees INNER JOIN Tokens 
+    cursor.execute('''SELECT Tokens.interview FROM Employees INNER JOIN Tokens 
                             ON Employees.id = Tokens.emp_id
                             WHERE Tokens.id = ? AND Employees.name = ?''',(interview_id, user_name))
     response = cursor.fetchall()
-    column_names = [description[0] for description in cursor.description]
-    return response, column_names
+    return response[0][0]
 
 @db_connection
 def get_all_interviews(user_name: str, cursor=None):
@@ -166,24 +143,21 @@ def get_user_id(user_name: str, cursor=None):
     else:
         return None
 
-def user_verification(user_name: str):
+@db_connection
+def user_verification(user_name: str, cursor=None):
     '''
     Проверка на наличие пользователя в чёрном списке.
     :param user_name: Имя пользователя.
     :return: (bool) True - пользователь прошёл верификацию.
                     False - пользователю отказано в доступе к сервису.
     '''
-    conn = sqlite3.connect('./dataset/my_database.db')
-    cursor = conn.cursor()
     cursor.execute('''SELECT Employees.enable FROM Employees WHERE Employees.name = ?''', (user_name,))
     response = cursor.fetchall()
-    conn.commit()
-    conn.close()
     if len(response) == 0:
         if user_name == 'alekseyfilenkov':
-            add_user(user_name, 'admin')
+            cursor.execute('''INSERT INTO Employees (name,position) VALUES (?,?)''', (user_name, 'admin'))
         else:
-            add_user(user_name, 'employee')
+            cursor.execute('''INSERT INTO Employees (name,position) VALUES (?,?)''', (user_name, 'employee'))
         return True
     elif response[0][0] == 1:
         return True
@@ -199,7 +173,7 @@ def check_position(user_name: str, position: list, cursor=None):
     else:
         return False
 
-@db_connection # TODO:
+@db_connection
 def add_token(user_name, employee_name, cursor=None):
     if check_position(user_name,['admin','company']):
         employee_id = get_user_id(employee_name)
@@ -234,38 +208,9 @@ def get_bot_state(user_name, cursor=None):
     return response[0][0]
 
 @db_connection
-def write_a_question(interview_id, quest_type, question, quest_id, cursor=None):
-    if quest_type == 'base':
-        cursor.execute(f'''UPDATE Tokens SET quest{quest_id} = ? WHERE id = ?''',(question,interview_id))
-    elif quest_type == 'extra':
-        cursor.execute(f'''UPDATE Tokens SET extraquest{quest_id} = ? WHERE id = ?''', (question, interview_id))
-
-@db_connection
-def write_questions(interview_id, questions, cursor=None):
-    query = f'''UPDATE Tokens SET '''
-    for i in range(1,len(questions)+1):
-        query += f"quest{i} = '{questions[i-1]}',"
-    query = query[:-1] + f' WHERE id = {interview_id}'
-    # print(query)
-    cursor.execute(query)
-
-@db_connection
-def get_cur_question(interview_id, question_id,cursor=None):
-    cursor.execute(f'''SELECT quest{question_id} FROM Tokens WHERE id = ?''',(interview_id,))
-    response = cursor.fetchall()
-    if len(response) > 0:
-        return response[0][0]
-    else:
-        return None
-
-@db_connection
-def write_answer(interview_id, ans_type, answer, answer_id, cursor=None):
-    if ans_type == 'base':
-        print(f'''UPDATE Tokens SET ans{answer_id} = '{answer}' WHERE id = {interview_id};''')
-        cursor.execute(f'''UPDATE Tokens SET ans{answer_id} = ? WHERE id = ?;''',(answer,interview_id))
-    elif ans_type == 'extra':
-        print(f'''UPDATE Tokens SET extrans{answer_id} = '{answer}' WHERE id = {interview_id};''')
-        cursor.execute(f'''UPDATE Tokens SET extrans{answer_id} = ? WHERE id = ?;''', (answer, interview_id))
+def write_interview(interview_id, interview_list, cursor=None):
+    interview_log = ''.join([message + '\n' for message in interview_list])
+    cursor.execute(f'''UPDATE Tokens SET interview = ? WHERE id = ?;''',(interview_log,interview_id))
 
 @db_connection
 def finish_interview(interview_id, cursor=None):

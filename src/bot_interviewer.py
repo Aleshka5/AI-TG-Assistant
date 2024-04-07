@@ -1,51 +1,34 @@
-import re
 from . import db
 from telebot import types
-from config import interview_columns
 from src.ai_functools import get_addition_question, get_base_guestions, just_chat
 
 def interview(user_name, user_answer=None):
-    interview_log, cols_names = db.get_active_interview(user_name)
-    interview_dict = dict(zip(cols_names,interview_log[0]))
-    print(interview_dict)
-    interview_id = interview_dict['id']
+    interview_id, interview_log = db.get_active_interview(user_name)
+    interview_list = interview_log.split('\n')
+    print(interview_list)
 
-    for i in range(1,6):
-
-        if interview_dict[f'ans{i}'] is None:
+    for message_id in range(len(interview_list)):
+        if interview_list[message_id] == 'Ответ:None.':
 
             # Продолжение интервью
             if user_answer:
-                # Записать ответ
-                print('Запишем:',user_answer)
-                db.write_answer(interview_id, 'base', user_answer, i)
-                # Задать доп вопрос
-                add_question = get_addition_question(user_answer)
-                # Записать вопрос
-                db.write_a_question(interview_id, 'extra', add_question, i)
-                return add_question
+                interview_list[message_id] = f'Ответ:{user_answer}'
+
+                # Если интервью окончено
+                if message_id == len(interview_list) - 1:
+                    db.write_interview(interview_id, interview_list)
+                    db.finish_interview(interview_id)
+                    return None
+
+                question = interview_list[message_id + 1]
+                db.write_interview(interview_id, interview_list)
+                return question
 
             # Начало интервью
             else:
-                # Создать n основных вопросов
-                base_questions = get_base_guestions()
-                # Записать основные вопросы в базу
-                db.write_questions(interview_id,base_questions)
-                return base_questions[i-1]
-
-        elif interview_dict[f'extrans{i}'] is None:
-
-            # Записать ответ
-            print('Запишем доп:', user_answer)
-            db.write_answer(interview_id, 'extra', user_answer, i)
-            if i < 5:
-                # Выдать новый вопрос
-                question = db.get_cur_question(interview_id, i+1)
+                question = interview_list[message_id - 1]
+                db.write_interview(interview_id, interview_list)
                 return question
-            else:
-                # Установить новое название для завершённого интервью
-                db.finish_interview(interview_id)
-                return None
 
 def get_interviews_titles(user_name):
     keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=False, one_time_keyboard=True)
