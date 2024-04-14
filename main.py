@@ -193,6 +193,9 @@ def bot_start(token):
 
     bot.polling()
 
+def main():
+    bot.polling()
+
 if __name__ == '__main__':
     import os
     from pickle import load
