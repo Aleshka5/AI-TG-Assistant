@@ -3,7 +3,9 @@ import re
 from src import db
 from src.bot_interviewer import interview, get_interviews_titles, get_log_interview
 from src.tools import print_welcome, print_user_not_founded, print_hi_chat, print_no_parsed_data
-from config import (keyboard_hi, keyboard_admin,limit_text_len, USER_NOT_FOUNDED, NEW_USER_UNKNOWN_INPUT, TEXT_LEN_LIMIT_ERROR)
+from config import (keyboard_hi, keyboard_admin, limit_text_len, USER_NOT_FOUNDED, NEW_USER_UNKNOWN_INPUT,
+                    TEXT_LEN_LIMIT_ERROR)
+
 
 def bot_start(token):
     telebot.apihelper.ENABLE_MIDDLEWARE = True
@@ -41,7 +43,7 @@ def bot_start(token):
         if db.user_verification(owner, message.text):
 
             # Вывести приветствие
-            if db.check_position(owner,['admin','company']):
+            if db.check_position(owner, ['admin', 'company']):
                 bot.send_message(message.chat.id, print_welcome(owner=owner), reply_markup=keyboard_admin)
 
             else:
@@ -59,11 +61,12 @@ def bot_start(token):
         verification = db.user_verification(owner, text)
 
         if not verification:
-            bot.send_message(message.chat.id,"Извините, вы были заблокированы за нарушение правил.\nДля разблокировки вам необходимо написать: Вернуться")
+            bot.send_message(message.chat.id,
+                             "Извините, вы были заблокированы за нарушение правил.\nДля разблокировки вам необходимо написать: Вернуться")
             return None
 
         # Если мы получили текст возвращения из бана
-        elif isinstance(verification,str):
+        elif isinstance(verification, str):
             bot.send_message(message.chat.id, verification)
             # Зануляем текст, чтобы не использовать процедуру возвращения в качестве ответа на вопрос
             text = None
@@ -86,7 +89,7 @@ def bot_start(token):
             # Проверка введённого токена для интервью
             elif 'Токен:' in text:
 
-                if db.check_token(owner,text[6:].strip()):
+                if db.check_token(owner, text[6:].strip()):
                     if db.set_enable_interview(owner, token=text[6:].strip()):
                         db.set_bot_state(owner, 'Interviewer', bot, message)
                         question = interview(owner)
@@ -95,7 +98,8 @@ def bot_start(token):
                         bot.send_message(message.chat.id, 'Невозможно начать новое интервью.')
 
                 else:
-                    bot.send_message(message.chat.id, "Вы ввели недействитеьный токен или у вас больше одного активного интервью. Попробуйте ещё раз...")
+                    bot.send_message(message.chat.id,
+                                     "Вы ввели недействитеьный токен или у вас больше одного активного интервью. Попробуйте ещё раз...")
 
             # Выбираем одно из прошлых интервью
             elif 'Выбрать одно из прошлых интервью.' == text:
@@ -115,7 +119,7 @@ def bot_start(token):
 
             elif 'Имя:' in text:
                 user_name = text[4:].strip().strip('@')
-                token = db.add_token(owner,user_name)
+                token = db.add_token(owner, user_name)
 
                 if token:
                     bot.send_message(message.chat.id, f"Передайте сотруднику\nToken:{token}")
@@ -193,16 +197,18 @@ def bot_start(token):
 
     bot.polling()
 
+
 def main():
     bot.polling()
+
 
 if __name__ == '__main__':
     import os
     from pickle import load
+
     if os.path.exists('TOKEN.pkl'):
-        with open('TOKEN.pkl','rb') as f:
+        with open('TOKEN.pkl', 'rb') as f:
             TOKEN = load(f)
         bot_start(TOKEN)
     else:
         print('Токен не найден...')
-

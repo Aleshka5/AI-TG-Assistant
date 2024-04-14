@@ -1,7 +1,8 @@
 from telebot import types # для указание типов
 
 limit_text_len = 3000
-
+BIG_PARAGRAPH_THRESHOLD = 1400
+SMALL_PARAGRAPH_THRESHOLD = 900
 AI_STATE_INTERVIEWER = 'AI State: Interviewer\nВсе ваши ответы кроме комманд /<...> будут рассматриваться как ответы на вопросы'
 AI_STATE_ASSISTANT = 'AI State: Assistant\nВсе ваши ответы кроме комманд /<...> будут рассматриваться как навигация по меню выбора'
 AI_STATE_CHAT = 'AI State: Chat\nВсе ваши ответы кроме комманд /<...> будут рассматриваться как вопросы для GPT'
