@@ -1,7 +1,7 @@
 import sqlite3
 from src.tools import generate_token, print_table
 from dataset import get_dataset_path
-from config import INTERVIEW_BLANK
+from config import INTERVIEW_BLANK, AI_STATE_ASSISTANT, AI_STATE_CHAT, AI_STATE_INTERVIEWER
 
 def db_connection(func):
     def wrapper(*args,**kwargs):
@@ -30,7 +30,7 @@ def init(cursor=None):
                             name char(100),
                             position char(50),
                             bot_state char(11),
-                            enable BOOL DEFAULT True
+                            enable integer DEFAULT 1
                         );''')
 
     # Создание таблицы Tokens с внешним ключом на таблицу Employees
@@ -40,7 +40,7 @@ def init(cursor=None):
                             emp_id INTEGER,
                             interview TEXT,
                             summary TEXT,
-                            title char(30) DEFAULT 'Не законченное интервью',
+                            title char(30) DEFAULT 'Не начатое интервью',
                             interview_enable BOOL DEFAULT False,
                             deleted BOOL DEFAULT False,
                             FOREIGN KEY (emp_id) REFERENCES Employees(id)
@@ -83,10 +83,28 @@ def check_token(user_name: str, token: str, cursor=None):
         return False
 
 @db_connection
-def set_enable_interview(token: str, cursor=None):
+def set_enable_interview(user_name: str, token: str = None, interview_id: int = None, cursor=None):
     blank_interview_log = ''.join([message + '\n' for message in INTERVIEW_BLANK])
-    cursor.execute('''UPDATE Tokens SET interview_enable = 1, interview = ? WHERE token = ?''', (blank_interview_log,token))
-    return None
+    # Проверяем нет ли активного интервью.
+    cursor.execute('''SELECT Tokens.interview_enable FROM Employees INNER JOIN Tokens 
+                                ON Employees.id = Tokens.emp_id
+                                WHERE Tokens.interview_enable = 1 AND Employees.name = ?''', (user_name,))
+    response = cursor.fetchall()
+    # Если есть активное интервью - не создаём новое
+    if len(response) > 0:
+        return False
+
+    # Активируем интервью
+    if token:
+        cursor.execute('''UPDATE Tokens SET interview_enable = 1, title = 'Не законченное интервью',interview = ? WHERE token = ?''',
+                       (blank_interview_log,token))
+        return True
+    elif interview_id:
+        cursor.execute('''UPDATE Tokens SET interview_enable = 1, title = 'Не законченное интервью', interview = ? WHERE id = ?''',
+                       (blank_interview_log, interview_id))
+        return True
+
+    return False
 
 @db_connection
 def get_active_interview(user_name: str, cursor=None):
@@ -131,7 +149,7 @@ def ban_user(user_name: str, cursor=None):
     :param user_name: (str) - имя пользователя
     :return: None
     '''
-    cursor.execute('''UPDATE Employees SET enable = 0 WHERE name = ?''', (user_name,))
+    cursor.execute('''UPDATE Employees SET enable = 2 WHERE name = ?''', (user_name,))
     return None
 
 @db_connection
@@ -144,7 +162,7 @@ def get_user_id(user_name: str, cursor=None):
         return None
 
 @db_connection
-def user_verification(user_name: str, cursor=None):
+def user_verification(user_name: str, user_message: str, cursor=None):
     '''
     Проверка на наличие пользователя в чёрном списке.
     :param user_name: Имя пользователя.
@@ -153,16 +171,36 @@ def user_verification(user_name: str, cursor=None):
     '''
     cursor.execute('''SELECT Employees.enable FROM Employees WHERE Employees.name = ?''', (user_name,))
     response = cursor.fetchall()
+    # Если пользователь не зарегестрирован
     if len(response) == 0:
-        if user_name == 'alekseyfilenkov':
-            cursor.execute('''INSERT INTO Employees (name,position) VALUES (?,?)''', (user_name, 'admin'))
-        else:
-            cursor.execute('''INSERT INTO Employees (name,position) VALUES (?,?)''', (user_name, 'employee'))
+        cursor.execute('''INSERT INTO Employees (name,position) VALUES (?,?)''', (user_name, 'employee'))
         return True
+    # Если пользователь активен
     elif response[0][0] == 1:
         return True
-    else:
+    # Если пользователь заблокирован
+    elif response[0][0] > 1:
+        # Если пользователь возвращается из бана
+        if 'Вернуться' in user_message:
+            apologize(user_name)
+            return "Возвращаемся к месту на котором остановились..."
+
         return False
+
+@db_connection
+def apologize(user_name, cursor=None):
+    cursor.execute('''SELECT Employees.enable FROM Employees WHERE Employees.name = ?''', (user_name,))
+    response = cursor.fetchall()
+    if response[0][0] > 1:
+        cursor.execute('''UPDATE Employees SET enable = ? WHERE name = ?;''', (response[0][0]-1, user_name))
+        if response[0][0] - 1 == 1:
+            # Извинения приняты
+            print('Извинения приняты')
+            return True
+        else:
+            return False
+
+    return False
 
 @db_connection
 def check_position(user_name: str, position: list, cursor=None):
@@ -197,7 +235,14 @@ def select_all(cursor=None):
     print_table(response,column_names)
 
 @db_connection
-def set_bot_state(user_name, new_state, cursor=None):
+def set_bot_state(user_name, new_state, bot, message, cursor=None):
+    if new_state == 'Interviewer':
+        bot.send_message(message.chat.id, AI_STATE_INTERVIEWER)
+    elif new_state == 'Assistant':
+        bot.send_message(message.chat.id, AI_STATE_ASSISTANT)
+    elif new_state == 'Chat':
+        bot.send_message(message.chat.id, AI_STATE_CHAT)
+
     cursor.execute('''UPDATE Employees SET bot_state = ? WHERE name = ?;''',(new_state,user_name))
     return None
 

@@ -8,7 +8,6 @@ def print_welcome(owner):
     :return: Выводит приветственные слова для старого пользователя.
     '''
     text = f'''Добро пожаловать, {owner}!
-AI State: Assistant
 Выберите пункт меню...
      
     '''
@@ -21,22 +20,21 @@ def print_hi_chat(owner):
     :return: Выводит приветственные слова для старого пользователя.
     '''
     text = f'''Умный чат приветствует вас, {owner}!
-AI State: Chat AI
 Введи ваш вопрос и я постараюсь на него ответить.'''
     return text
 
-def print_list_interviews(client_data):
-    '''
-
-    :param client_data: Профиль клиента.
-    :return: Выводит меню выбора прошлого интервью.
-    '''
-    for query in client_data['Queries'].keys():
-        pass
-    if int(query) != 0:
-        return f'''AI State: Helper\nВаши интервью:{[query for query in client_data['Queries'].keys() if query != '0']}'''
-    else:
-        return 'У вас пока не было ни одного интервью.'
+# def print_list_interviews(client_data):
+#     '''
+#
+#     :param client_data: Профиль клиента.
+#     :return: Выводит меню выбора прошлого интервью.
+#     '''
+#     for query in client_data['Queries'].keys():
+#         pass
+#     if int(query) != 0:
+#         return f'''AI State: Helper\nВаши интервью:{[query for query in client_data['Queries'].keys() if query != '0']}'''
+#     else:
+#         return 'У вас пока не было ни одного интервью.'
 
 def print_user_not_founded():
     return '''Добро пожаловать!

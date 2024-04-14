@@ -4,7 +4,7 @@ from src.ai_functools import get_addition_question, get_base_guestions, just_cha
 
 def interview(user_name, user_answer=None):
     interview_id, interview_log = db.get_active_interview(user_name)
-    interview_list = interview_log.split('\n')
+    interview_list = [text for text in interview_log.split('\n') if len(text)>0]
     print(interview_list)
 
     for message_id in range(len(interview_list)):
@@ -44,12 +44,12 @@ def get_interviews_titles(user_name):
         return None
 
 def get_log_interview(interview_id, uesr_name):
-    interview_log, cols_names = db.get_interview(interview_id, uesr_name)
-    interview_dict = dict(zip(cols_names, interview_log[0]))
-    res_print = ''
-    for i in range(1,6):
-        res_print += interview_dict[f'quest{i}'] + '\n' + interview_dict[f'ans{i}'] + '\n'
-        res_print += interview_dict[f'extraquest{i}'] + '\n' + interview_dict[f'extrans{i}'] + '\n'
-    return res_print
+    interview_log = db.get_interview(interview_id, uesr_name)
+    # interview_dict = dict(zip(cols_names, interview_log[0]))
+    # res_print = ''
+    # for i in range(1,6):
+    #     res_print += interview_dict[f'quest{i}'] + '\n' + interview_dict[f'ans{i}'] + '\n'
+    #     res_print += interview_dict[f'extraquest{i}'] + '\n' + interview_dict[f'extrans{i}'] + '\n'
+    return interview_log
 
 
