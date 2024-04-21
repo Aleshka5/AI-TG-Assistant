@@ -1,6 +1,7 @@
 import telebot
 import re
 from src import db
+from src.ai_functools import just_chat
 from src.bot_interviewer import interview, get_interviews_titles, get_log_interview
 from src.tools import print_welcome, print_user_not_founded, print_hi_chat, print_no_parsed_data
 from config import (keyboard_hi, keyboard_admin, limit_text_len, USER_NOT_FOUNDED, NEW_USER_UNKNOWN_INPUT,
@@ -188,7 +189,9 @@ def bot_start(token):
 
 
         elif bot_state == 'Chat':
-            bot.send_message(message.chat.id, f'Я бы вам ответил на: {text}, но в данный мемент нет связи с API.')
+            # TODO: Убрать захардкоженное название chair
+            bot.send_message(message.chat.id, just_chat(text,'Design'))
+            # bot.send_message(message.chat.id, f'Я бы вам ответил на: {text}, но в данный мемент нет связи с API.')
 
         else:
             bot.send_message(message.chat.id, NEW_USER_UNKNOWN_INPUT)
@@ -198,13 +201,12 @@ def bot_start(token):
     bot.polling()
 
 
-def main():
-    bot.polling()
-
-
 if __name__ == '__main__':
     import os
-    from pickle import load
+    from pickle import load, dump
+
+    # with open('TOKEN_MIRON.pkl', 'wb') as f:
+    #     dump('7009837607: AAFdKD2gh0c4y1Dp48PZB3DrrnX5Ymcq460',f)
 
     if os.path.exists('TOKEN.pkl'):
         with open('TOKEN.pkl', 'rb') as f:

@@ -33,6 +33,7 @@ def init(cursor=None):
                             name char(100),
                             position char(50),
                             bot_state char(11),
+                            chair_name char(50),
                             enable integer DEFAULT 1
                         );''')
 

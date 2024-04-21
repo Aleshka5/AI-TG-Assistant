@@ -1,6 +1,5 @@
 from . import db
 from telebot import types
-from src.ai_functools import get_addition_question, get_base_guestions, just_chat
 
 def interview(user_name, user_answer=None):
     interview_id, interview_log = db.get_active_interview(user_name)
