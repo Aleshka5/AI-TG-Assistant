@@ -36,7 +36,7 @@ def bot_start(tg_token: str, ai_token: str):
             db.set_bot_state(owner, 'Chat', bot, message)
 
     @bot.message_handler(commands=['start'])
-    def send_welcome(message):
+    def start_welcome(message):
         '''
 
         :param message: Объект входного сообщения.
@@ -60,6 +60,7 @@ def bot_start(tg_token: str, ai_token: str):
             # Изменить состояние бота
             db.set_bot_state(owner, 'Assistant', bot, message)
 
+    # TODO:Добавить выбор кафедры, к которой принадлежит пользователь
     @bot.message_handler(content_types='text')
     def get_any_message(message):
         db.init()
@@ -183,7 +184,6 @@ def bot_start(tg_token: str, ai_token: str):
 
         # Парсер сценариев для ведения интервью
         elif bot_state == 'Interviewer':
-
             # Запуск функции проведения интервью
             question = interview(owner, text)
             if question:

@@ -1,4 +1,3 @@
-import numpy as np
 import pickle as pkl
 from config import BIG_PARAGRAPH_THRESHOLD, SMALL_PARAGRAPH_THRESHOLD
 
