@@ -7,7 +7,6 @@ from src.tools import print_welcome, print_user_not_founded, print_hi_chat, prin
 from config import (keyboard_hi, keyboard_admin, limit_text_len, USER_NOT_FOUNDED, NEW_USER_UNKNOWN_INPUT,
                     TEXT_LEN_LIMIT_ERROR, BAN_APOLOGISE, TOKEN_TRY_AGAIN)
 
-
 def bot_start(tg_token: str, ai_token: str):
     '''
     Функция запускает сервис для работы телеграм бота-интервьюера.

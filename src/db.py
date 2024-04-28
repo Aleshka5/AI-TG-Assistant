@@ -3,7 +3,6 @@ from src.tools import generate_token, print_table
 from dataset import get_dataset_path
 from config import INTERVIEW_BLANK, AI_STATE_ASSISTANT, AI_STATE_CHAT, AI_STATE_INTERVIEWER
 
-
 def db_connection(func):
     def wrapper(*args, **kwargs):
         # Выполнение некой функции
@@ -114,7 +113,6 @@ def set_enable_interview(user_name: str, token: str = None, interview_id: int = 
 
     return False
 
-
 @db_connection
 def get_active_interview(user_name: str, cursor=None):
     cursor.execute('''SELECT Tokens.id, Tokens.interview FROM Employees INNER JOIN Tokens 
@@ -124,7 +122,6 @@ def get_active_interview(user_name: str, cursor=None):
     print(response)
     return response[0][0], response[0][1]
 
-
 @db_connection
 def get_interview(interview_id, user_name: str, cursor=None):
     cursor.execute('''SELECT Tokens.interview FROM Employees INNER JOIN Tokens 
@@ -132,7 +129,6 @@ def get_interview(interview_id, user_name: str, cursor=None):
                             WHERE Tokens.id = ? AND Employees.name = ?''', (interview_id, user_name))
     response = cursor.fetchall()
     return response[0][0]
-
 
 @db_connection
 def get_all_interviews(user_name: str, cursor=None):
@@ -220,6 +216,21 @@ def apologize(user_name, cursor=None):
 
 
 @db_connection
+def apologize(user_name, cursor=None):
+    cursor.execute('''SELECT Employees.enable FROM Employees WHERE Employees.name = ?''', (user_name,))
+    response = cursor.fetchall()
+    if response[0][0] > 1:
+        cursor.execute('''UPDATE Employees SET enable = ? WHERE name = ?;''', (response[0][0]-1, user_name))
+        if response[0][0] - 1 == 1:
+            # Извинения приняты
+            print('Извинения приняты')
+            return True
+        else:
+            return False
+
+    return False
+
+@db_connection
 def check_position(user_name: str, position: list, cursor=None):
     cursor.execute('''SELECT Employees.position FROM Employees WHERE Employees.name = ?''', (user_name,))
     response = cursor.fetchall()
@@ -227,7 +238,6 @@ def check_position(user_name: str, position: list, cursor=None):
         return True
     else:
         return False
-
 
 @db_connection
 def add_token(user_name, employee_name, cursor=None):
