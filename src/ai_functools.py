@@ -147,13 +147,12 @@ def gpt_analize(context: str, topic: str, token: str, temp: int = 0.3) -> str:
     print(messages[0]['content'])
     print(messages[1]['content'])
     try:
-        # completion = openai.ChatCompletion.create(
-        #     model="gpt-3.5-turbo",
-        #     messages=messages,
-        #     temperature=temp
-        # )
-        # answer = str(completion.choices[0].message.content)
-        answer = 'Да, это верно на 10 баллов.'
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=temp
+        )
+        answer = str(completion.choices[0].message.content)
         print(answer)
         return answer
 
