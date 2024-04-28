@@ -40,7 +40,7 @@ def init(cursor=None):
     # Создание таблицы Tokens с внешним ключом на таблицу Employees
     cursor.execute('''CREATE TABLE IF NOT EXISTS Tokens (
                             id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            token char(256),
+                            token char(32),
                             emp_id INTEGER,
                             interview TEXT,
                             summary TEXT,
@@ -234,7 +234,7 @@ def add_token(user_name, employee_name, cursor=None):
     if check_position(user_name, ['admin', 'company']):
         employee_id = get_user_id(employee_name)
         if employee_id:
-            token = generate_token(length=256)
+            token = generate_token()
             cursor.execute('''INSERT INTO Tokens (token,emp_id) VALUES (?,?)''', (token, employee_id))
             return token
         else:
