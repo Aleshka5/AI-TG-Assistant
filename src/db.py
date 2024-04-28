@@ -18,7 +18,7 @@ def db_connection(func):
 
     return wrapper
 
-
+# TODO:Добавить в базу данные кафедры, к которой принадлежит пользователь
 @db_connection
 def init(cursor=None):
     '''
