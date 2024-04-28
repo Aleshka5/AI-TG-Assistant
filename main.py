@@ -1,11 +1,13 @@
 import telebot
 import re
+from threading import Thread
+from telebot import types
 from src import db
-from src.ai_functools import just_chat
+from src.ai_functools import just_chat, ai_analize
 from src.bot_interviewer import interview, get_interviews_titles, get_log_interview
-from src.tools import print_welcome, print_user_not_founded, print_hi_chat, print_no_parsed_data
-from config import (keyboard_hi, keyboard_admin, limit_text_len, USER_NOT_FOUNDED, NEW_USER_UNKNOWN_INPUT,
-                    TEXT_LEN_LIMIT_ERROR, BAN_APOLOGISE, TOKEN_TRY_AGAIN)
+from src.tools import print_welcome, print_hi_chat, print_no_parsed_data, get_chairs_list
+from config import (keyboard_hi, keyboard_admin, keyboard_chairs, limit_text_len, USER_NOT_FOUNDED,
+                    NEW_USER_UNKNOWN_INPUT, TEXT_LEN_LIMIT_ERROR, BAN_APOLOGISE, TOKEN_TRY_AGAIN)
 
 def bot_start(tg_token: str, ai_token: str):
     '''
@@ -94,6 +96,14 @@ def bot_start(tg_token: str, ai_token: str):
             if 'Начать новое интервью.' == text:
                 bot.send_message(message.chat.id, "Введите токен в формате:\n'Токен: xxx...xxx'")
 
+            elif 'Выбрать кафедру.' == text:
+                actual_chairs = keyboard_chairs
+                for chair in get_chairs_list():
+                    print(chair)
+                    key = types.KeyboardButton(text=chair)
+                    actual_chairs.add(key)
+                bot.send_message(message.chat.id, "Выберите одну из предложенных кафедр:", reply_markup=actual_chairs)
+
             # Проверка введённого токена для интервью
             elif 'Токен:' in text:
 
@@ -129,7 +139,7 @@ def bot_start(tg_token: str, ai_token: str):
                 token = db.add_token(owner, user_name)
 
                 if token:
-                    bot.send_message(message.chat.id, f"Передайте сотруднику\nToken:{token}")
+                    bot.send_message(message.chat.id, f"Передайте сотруднику\nТокен:{token}")
 
                 else:
                     bot.send_message(message.chat.id, USER_NOT_FOUNDED)
@@ -144,12 +154,14 @@ def bot_start(tg_token: str, ai_token: str):
                 # Если найдено соответствие, выводим найденную подстроку
                 if match:
                     interview_id = int(match.group(1))
-                    if db.set_enable_interview(owner, interview_id=interview_id):
-                        db.set_bot_state(owner, 'Interviewer', bot, message)
-                        question = interview(owner)
-                        bot.send_message(message.chat.id, question)
-                    else:
-                        bot.send_message(message.chat.id, 'Невозможно начать новое интервью.')
+                    bot.send_message(message.chat.id, 'Введите токен в следующем формате:\nТокен:')
+
+                    # if db.set_enable_interview(owner, interview_id=interview_id):
+                    #     db.set_bot_state(owner, 'Interviewer', bot, message)
+                    #     question = interview(owner)
+                    #     bot.send_message(message.chat.id, question)
+                    # else:
+                    #     bot.send_message(message.chat.id, 'Невозможно начать новое интервью.')
 
             # Продолжение интервью
             elif 'Выбрать не законченное интервью' in text:
@@ -171,13 +183,43 @@ def bot_start(tg_token: str, ai_token: str):
                 if match:
                     interview_id = int(match.group(1))
                     print_log = get_log_interview(interview_id, owner)
-                    # Вывести кнопки /start
-                    if db.check_position(owner, ['admin', 'company']):
-                        bot.send_message(message.chat.id, print_log, reply_markup=keyboard_admin)
-                    else:
-                        bot.send_message(message.chat.id, print_log, reply_markup=keyboard_hi)
+                    # Если анализ ещё не запускался
+                    if print_log[1] is None:
+                        chair_name = db.get_chair_name(owner)
+                        db.write_analyze(interview_id, 'Analyze in process...')
+                        Thread(target=ai_analize, args=(interview_id, print_log[0], chair_name, ai_token)).start()
+                        # Вывести кнопки /start
+                        if db.check_position(owner, ['admin', 'company']):
+                            bot.send_message(message.chat.id, print_log[0]+'\nИнтервью отправлено на анализ ИИ.',
+                                             reply_markup=keyboard_admin)
+                        else:
+                            bot.send_message(message.chat.id, print_log[0]+'\nИнтервью отправлено на анализ ИИ.',
+                                             reply_markup=keyboard_hi)
 
+                    else:
+                        print()
+                        # Вывести кнопки /start
+                        if db.check_position(owner, ['admin', 'company']):
+                            bot.send_message(message.chat.id, print_log[0]+print_log[1],
+                                             reply_markup=keyboard_admin)
+                        else:
+                            bot.send_message(message.chat.id, print_log[0]+print_log[1],
+                                             reply_markup=keyboard_hi)
             else:
+
+                for chair in get_chairs_list():
+
+                    if text == chair:
+                        db.update_chair_name(owner, chair)
+                        # Вывести кнопки /start
+                        if db.check_position(owner, ['admin', 'company']):
+                            bot.send_message(message.chat.id, f"За вами зафиксирована кафедра: {chair}",
+                                             reply_markup=keyboard_admin)
+                        else:
+                            bot.send_message(message.chat.id, f"За вами зафиксирована кафедра: {chair}",
+                                             reply_markup=keyboard_hi)
+
+                        return None
                 bot.send_message(message.chat.id, print_no_parsed_data())
 
 

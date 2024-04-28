@@ -44,11 +44,6 @@ def get_interviews_titles(user_name):
 
 def get_log_interview(interview_id, uesr_name):
     interview_log = db.get_interview(interview_id, uesr_name)
-    # interview_dict = dict(zip(cols_names, interview_log[0]))
-    # res_print = ''
-    # for i in range(1,6):
-    #     res_print += interview_dict[f'quest{i}'] + '\n' + interview_dict[f'ans{i}'] + '\n'
-    #     res_print += interview_dict[f'extraquest{i}'] + '\n' + interview_dict[f'extrans{i}'] + '\n'
     return interview_log
 
 

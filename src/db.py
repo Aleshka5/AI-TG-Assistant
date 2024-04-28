@@ -18,7 +18,6 @@ def db_connection(func):
 
     return wrapper
 
-# TODO:Добавить в базу данные кафедры, к которой принадлежит пользователь
 @db_connection
 def init(cursor=None):
     '''
@@ -49,8 +48,8 @@ def init(cursor=None):
                             FOREIGN KEY (emp_id) REFERENCES Employees(id)
                         );''')
 
-    cursor.execute('''INSERT INTO Employees (name, position)
-                        SELECT 'alekseyfilenkov', 'admin'
+    cursor.execute('''INSERT INTO Employees (name, position,chair_name)
+                        SELECT 'alekseyfilenkov', 'admin', 'ANY'
                         WHERE NOT EXISTS (
                         SELECT 1 FROM Employees WHERE name = 'alekseyfilenkov'
                         );''')
@@ -70,14 +69,18 @@ def check_token(user_name: str, token: str, cursor=None):
                         WHERE Tokens.interview_enable = 1''')
     response = cursor.fetchall()
     if len(response) == 0:
-        cursor.execute('''SELECT Employees.name
+        cursor.execute('''SELECT Employees.name, Employees.chair_name
                                 FROM Employees
                                 INNER JOIN Tokens ON Employees.id = Tokens.emp_id
                                 WHERE Tokens.token = ?''', (token,))
         response = cursor.fetchall()
         if len(response) > 0:
-            if response[0][0] == user_name:
+            print(response)
+            if response[0][0] == user_name and response[0][1]:
                 return True
+            else:
+                print('Вы либо ввели чужой токен, либо не ввели информацию о вашей кафедре.')
+                return False
 
         print('Это не верный токен.')
         return False
@@ -85,7 +88,6 @@ def check_token(user_name: str, token: str, cursor=None):
     else:
         print('У вас больше одного активного интервью')
         return False
-
 
 @db_connection
 def set_enable_interview(user_name: str, token: str = None, interview_id: int = None, cursor=None):
@@ -124,11 +126,11 @@ def get_active_interview(user_name: str, cursor=None):
 
 @db_connection
 def get_interview(interview_id, user_name: str, cursor=None):
-    cursor.execute('''SELECT Tokens.interview FROM Employees INNER JOIN Tokens 
+    cursor.execute('''SELECT Tokens.interview, Tokens.summary FROM Employees INNER JOIN Tokens 
                             ON Employees.id = Tokens.emp_id
                             WHERE Tokens.id = ? AND Employees.name = ?''', (interview_id, user_name))
     response = cursor.fetchall()
-    return response[0][0]
+    return response[0]
 
 @db_connection
 def get_all_interviews(user_name: str, cursor=None):
@@ -138,7 +140,6 @@ def get_all_interviews(user_name: str, cursor=None):
     response = cursor.fetchall()
     print(response)
     return response
-
 
 @db_connection
 def add_user(user_name: str, position: str, cursor=None):
@@ -150,7 +151,6 @@ def add_user(user_name: str, position: str, cursor=None):
     cursor.execute('''INSERT INTO Employees (name,position) VALUES (?,?)''', (user_name, position))
     return None
 
-
 @db_connection
 def ban_user(user_name: str, cursor=None):
     """
@@ -161,7 +161,6 @@ def ban_user(user_name: str, cursor=None):
     cursor.execute('''UPDATE Employees SET enable = 2 WHERE name = ?''', (user_name,))
     return None
 
-
 @db_connection
 def get_user_id(user_name: str, cursor=None):
     cursor.execute('''SELECT Employees.id FROM Employees WHERE Employees.name = ?''', (user_name,))
@@ -171,6 +170,11 @@ def get_user_id(user_name: str, cursor=None):
     else:
         return None
 
+@db_connection
+def get_chair_name(user_name: str, cursor=None):
+    cursor.execute('''SELECT Employees.chair_name FROM Employees WHERE Employees.name = ?''', (user_name,))
+    chair_name = cursor.fetchall()
+    return chair_name[0][0]
 
 @db_connection
 def user_verification(user_name: str, user_message: str, cursor=None):
@@ -198,7 +202,6 @@ def user_verification(user_name: str, user_message: str, cursor=None):
 
         return False
 
-
 @db_connection
 def apologize(user_name, cursor=None):
     cursor.execute('''SELECT Employees.enable FROM Employees WHERE Employees.name = ?''', (user_name,))
@@ -214,21 +217,20 @@ def apologize(user_name, cursor=None):
 
     return False
 
-
-@db_connection
-def apologize(user_name, cursor=None):
-    cursor.execute('''SELECT Employees.enable FROM Employees WHERE Employees.name = ?''', (user_name,))
-    response = cursor.fetchall()
-    if response[0][0] > 1:
-        cursor.execute('''UPDATE Employees SET enable = ? WHERE name = ?;''', (response[0][0]-1, user_name))
-        if response[0][0] - 1 == 1:
-            # Извинения приняты
-            print('Извинения приняты')
-            return True
-        else:
-            return False
-
-    return False
+# @db_connection
+# def apologize(user_name, cursor=None):
+#     cursor.execute('''SELECT Employees.enable FROM Employees WHERE Employees.name = ?''', (user_name,))
+#     response = cursor.fetchall()
+#     if response[0][0] > 1:
+#         cursor.execute('''UPDATE Employees SET enable = ? WHERE name = ?;''', (response[0][0]-1, user_name))
+#         if response[0][0] - 1 == 1:
+#             # Извинения приняты
+#             print('Извинения приняты')
+#             return True
+#         else:
+#             return False
+#
+#     return False
 
 @db_connection
 def check_position(user_name: str, position: list, cursor=None):
@@ -263,7 +265,6 @@ def select_all(cursor=None):
     column_names = [description[0] for description in cursor.description]
     print_table(response, column_names)
 
-
 @db_connection
 def set_bot_state(user_name, new_state, bot, message, cursor=None):
     if new_state == 'Interviewer':
@@ -276,26 +277,32 @@ def set_bot_state(user_name, new_state, bot, message, cursor=None):
     cursor.execute('''UPDATE Employees SET bot_state = ? WHERE name = ?;''', (new_state, user_name))
     return None
 
-
 @db_connection
 def get_bot_state(user_name, cursor=None):
     cursor.execute('''SELECT Employees.bot_state FROM Employees WHERE name == ?;''', (user_name,))
     response = cursor.fetchall()
     return response[0][0]
 
-
 @db_connection
 def write_interview(interview_id, interview_list, cursor=None):
     interview_log = ''.join([message + '\n' for message in interview_list])
     cursor.execute(f'''UPDATE Tokens SET interview = ? WHERE id = ?;''', (interview_log, interview_id))
 
+@db_connection
+def write_analyze(interview_id, summary, cursor=None):
+    cursor.execute(f'''UPDATE Tokens SET summary = ? WHERE id = ?;''', (summary, interview_id))
 
 @db_connection
 def finish_interview(interview_id, cursor=None):
     cursor.execute(f'''UPDATE Tokens SET title = 'Завершённое интервью', interview_enable = False WHERE id = ?''',
                    (interview_id,))
 
+@db_connection
+def update_chair_name(user_name: str, chair_name:str, cursor=None):
+    cursor.execute('''UPDATE Employees SET chair_name = ? WHERE name = ?;''', (chair_name, user_name))
+    return None
 
 if __name__ == '__main__':
     init()
+    write_analyze(1,None)
     select_all()
