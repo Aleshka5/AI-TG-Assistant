@@ -1,17 +1,19 @@
 import os
 import openai
+from src import db
 import tensorflow as tf
 import pickle as pkl
 import numpy as np
 import tensorflow_hub as hub
 from tensorflow.keras.metrics import CosineSimilarity
 from functools import cache
+from src.tools import get_chairs_list
 from src.parsers import chair_data
-
 
 @cache
 def load_embedder():
-    return hub.KerasLayer("http://files.deeppavlov.ai/deeppavlov_data/elmo_ru-wiki_600k_steps.tar.gz", trainable=False)
+    elmo = hub.KerasLayer("C:/Users/Aleshka5/Desktop/Git_repos/AI-TG-Assistant/model", trainable=False)
+    return elmo
 
 
 def __get_similar_texts(texts: list, embeddings: list, phrase: str) -> list:
@@ -26,8 +28,6 @@ def __get_similar_texts(texts: list, embeddings: list, phrase: str) -> list:
         list_similarity.append(similarity)
 
     range_ingexes = np.argsort(list_similarity)[::-1]
-    # print(np.array(list_similarity)[range_ingexes])
-    # print(np.array(texts)[range_ingexes])
     return np.array(texts)[range_ingexes][:3]
 
 
@@ -80,8 +80,8 @@ def get_similar_texts(input_question: str, chair_name: str) -> str:
         text = file.read().lower()
     # Предобработка данных кафедры
     texts = chair_data(text)
-    with open(f'./chairs_data/{file_name}_edited.txt', 'w', encoding='UTF-8') as file:
-        file.write(''.join(texts))
+    # with open(f'./chairs_data/{file_name}_edited.txt', 'w', encoding='UTF-8') as file:
+    #     file.write(''.join(texts))
     # Преобразование/Считываение данных кафедр в векторы
     embeddings = __get_embeddings(file_name, texts)
     # Получение наиболее нужных текстов по кафедре
@@ -123,7 +123,7 @@ EFQM и Excellence Model. Если вопрос не по теме ответь 
             messages=messages,
             temperature=temp
         )
-        answer = str(__insert_newlines(completion.choices[0].message.content))
+        answer = str(completion.choices[0].message.content)
         print(answer)
         return answer
 
@@ -132,17 +132,79 @@ EFQM и Excellence Model. Если вопрос не по теме ответь 
         print('Проверьте доступ к API либо подождите, возможно сейчас модель перегружена запросами.')
         return "Error: Проверьте доступ к API либо подождите, возможно сейчас модель перегружена запросами."
 
+def gpt_analize(context: str, topic: str, token: str, temp: int = 0.3) -> str:
+    openai.api_key = token
+
+    messages = [
+        {"role": "system", "content": f"""Вы оцениваете правдоподобность утверждения на основе предоставленных отрывков текста:
+{context}При оценке правдоподобия утверждения учитывайте согласованность информации, представленной в текстах.
+Ваш ответ должен отражать степень вероятности или правдоподобия утверждения, основываясь на анализе текстов."""},
+        {"role": "user", "content": f"""Утверждение: {topic}\nОцени правдоподобность утверждения по шкале от 1 до 10 и
+дай небольшой комментарий."""},
+    ]
+
+    print(messages[0]['content'])
+    print(messages[1]['content'])
+    try:
+        # completion = openai.ChatCompletion.create(
+        #     model="gpt-3.5-turbo",
+        #     messages=messages,
+        #     temperature=temp
+        # )
+        # answer = str(completion.choices[0].message.content)
+        answer = 'Да, это верно на 10 баллов.'
+        print(answer)
+        return answer
+
+    except Exception as ex:
+        print(ex)
+        print('Проверьте доступ к API либо подождите, возможно сейчас модель перегружена запросами.')
+        return "Error: Проверьте доступ к API либо подождите, возможно сейчас модель перегружена запросами."
+
+def ai_analize(interview_id: str, interview_log: str, chair_name: str, token: str):
+    interview_list = interview_log.split('\n')
+    print('int_list ',interview_list)
+    question_id = 0
+    summary = ''
+    for answer in interview_list:
+        context = ''
+        if 'Вопрос' in answer:
+            question_id = int(answer.split(':')[0][7:])
+            continue
+
+        if len(answer) <= 0:
+            continue
+
+        answer = answer[6:]
+        print('answer', answer)
+
+        if chair_name in get_chairs_list():
+            top_texts = get_similar_texts(answer, chair_name)
+
+        else:
+            top_texts = get_similar_texts(answer, get_chairs_list()[0])
+
+        for i, text in enumerate(top_texts,1):
+            context.join(f'Текст {str(i)}: '+text+'\n')
+
+        print('context ', context)
+        summary += f'Анализ по вопросу {question_id}: ' + gpt_analize(context, answer, token) + '\n'
+
+    print(len(summary))
+    if len(summary) < 10000:
+        db.write_analyze(interview_id, summary)
+
 
 if __name__ == '__main__':
-    # file_name = 'Design'
+    file_name = 'Design'
     # with open(f'../chairs_data/{file_name}.txt', 'r', encoding='UTF-8') as file:
     #     text = file.read().lower()
     # # Предобработка данных кафедры
     # texts = chair_data(text)
-    # # Преобразование/Считываение данных кафедр в векторы
+    # Преобразование/Считываение данных кафедр в векторы
     # embeddings = get_embeddings(file_name,texts)
-    # # Получение наиболее нужных текстов по кафедре
-    # top_texts = get_similar_texts(texts, embeddings, 'Выпускники устраиваются на работу.')
-    # print(top_texts)
+    # Получение наиболее нужных текстов по кафедре
+    top_texts = get_similar_texts('Выпускники устраиваются на работу.', file_name)
+    print(top_texts)
 
-    just_chat('Расскажи мне, как лучше развивать персонал на кафедре ВМСС?')
+    # just_chat('Расскажи мне, как лучше развивать персонал на кафедре ВМСС?')

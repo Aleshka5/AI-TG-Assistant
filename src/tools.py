@@ -1,4 +1,4 @@
-# import secrets
+import os
 import hashlib
 from datetime import datetime
 
@@ -25,7 +25,6 @@ def print_hi_chat(owner):
     text = f'''Умный чат приветствует вас, {owner}!
 Введи ваш вопрос и я постараюсь на него ответить.'''
     return text
-
 # def print_list_interviews(client_data):
 #     '''
 #
@@ -39,6 +38,7 @@ def print_hi_chat(owner):
 #     else:
 #         return 'У вас пока не было ни одного интервью.'
 
+
 def print_user_not_founded():
     return '''Добро пожаловать!
 Введите /start, чтобы мы зарегистрировали вас и рассказали о возможностях нашего сервиса.
@@ -51,19 +51,6 @@ def print_no_parsed_data():
 Если вы не хотите этого, внимательно проверьте ваш запрос на соответствие формы ввода.
 '''
 
-# Not to need
-# def print_interview(interview_dict: dict):
-#     output = []
-#     pipeline = ['О1', 'Д1', 'О2', 'Д2', 'О3', 'Д3', 'О4', 'Д4', 'О5', 'Д5']
-#     for state in pipeline:
-#         output_line = ''
-#         if 'О' in state:
-#             output_line += interview_dict['AI'][state] + '\n'
-#         else:
-#             output_line += interview_dict['AI'][state]
-#         output_line += interview_dict['Client'][state] + '\n\n'
-#         output.append(output_line)
-#     return output
 
 def print_question(question, state):
     '''
@@ -124,3 +111,9 @@ def print_table(table_list,columns_list):
             print(str(' {:'+f'^{len_list[column]}'+'} |').format(str(table_list[raw][column])),end='')
         print('')
     return None
+
+def get_chairs_list() -> list:
+    return [file[:-4] for file in os.listdir('./chairs_data/') if '.txt' in file]
+
+if __name__ == '__main__':
+    get_chairs_list()

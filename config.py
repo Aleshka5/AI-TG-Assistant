@@ -17,16 +17,22 @@ INTERVIEW_BLANK = ['Вопрос 1:Какие точки роста для пе�
                    'Вопрос 4:Откуда?','Ответ:None.',
                    'Вопрос 5:Как?','Ответ:None.',]
 
+keyboard_chairs = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=False, one_time_keyboard=True)
+
 keyboard_hi = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=False, one_time_keyboard=True)
 key = types.KeyboardButton(text='Начать новое интервью.')
 keyboard_hi.add(key)
 key = types.KeyboardButton(text='Выбрать одно из прошлых интервью.')
+keyboard_hi.add(key)
+key = types.KeyboardButton(text='Выбрать кафедру.')
 keyboard_hi.add(key)
 
 keyboard_admin = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=False, one_time_keyboard=True)
 key = types.KeyboardButton(text='Начать новое интервью.')
 keyboard_admin.add(key)
 key = types.KeyboardButton(text='Выбрать одно из прошлых интервью.')
+keyboard_admin.add(key)
+key = types.KeyboardButton(text='Выбрать кафедру.')
 keyboard_admin.add(key)
 key = types.KeyboardButton(text='Назначить новое интервью.')
 keyboard_admin.add(key)
