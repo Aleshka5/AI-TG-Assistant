@@ -12,7 +12,8 @@ from src.parsers import chair_data
 
 @cache
 def load_embedder():
-    elmo = hub.KerasLayer("C:/Users/Aleshka5/Desktop/Git_repos/AI-TG-Assistant/model", trainable=False)
+    elmo = hub.KerasLayer("http://files.deeppavlov.ai/deeppavlov_data/elmo_ru-wiki_600k_steps.tar.gz", trainable=False)
+    # elmo = hub.KerasLayer("C:/Users/Aleshka5/Desktop/Git_repos/AI-TG-Assistant/model", trainable=False)
     return elmo
 
 
