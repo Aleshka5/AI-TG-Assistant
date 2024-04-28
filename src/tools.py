@@ -39,7 +39,6 @@ def print_hi_chat(owner):
 #     else:
 #         return 'У вас пока не было ни одного интервью.'
 
-
 def print_user_not_founded():
     return '''Добро пожаловать!
 Введите /start, чтобы мы зарегистрировали вас и рассказали о возможностях нашего сервиса.
@@ -65,7 +64,6 @@ def print_no_parsed_data():
 #         output_line += interview_dict['Client'][state] + '\n\n'
 #         output.append(output_line)
 #     return output
-
 
 def print_question(question, state):
     '''
