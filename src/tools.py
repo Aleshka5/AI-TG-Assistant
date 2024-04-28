@@ -1,5 +1,7 @@
-import secrets
-import string
+# import secrets
+import hashlib
+from datetime import datetime
+
 
 def print_welcome(owner):
     '''
@@ -12,6 +14,7 @@ def print_welcome(owner):
      
     '''
     return text
+
 
 def print_hi_chat(owner):
     '''
@@ -41,6 +44,7 @@ def print_user_not_founded():
 Введите /start, чтобы мы зарегистрировали вас и рассказали о возможностях нашего сервиса.
     '''
 
+
 def print_no_parsed_data():
     return f'''Если хотите по общаться со мной на разные темы - введите /chat.
 Если вы хотите вернуться к началу - введите /start.
@@ -48,18 +52,18 @@ def print_no_parsed_data():
 '''
 
 # Not to need
-def print_interview(interview_dict: dict):
-    output = []
-    pipeline = ['О1', 'Д1', 'О2', 'Д2', 'О3', 'Д3', 'О4', 'Д4', 'О5', 'Д5']
-    for state in pipeline:
-        output_line = ''
-        if 'О' in state:
-            output_line += interview_dict['AI'][state] + '\n'
-        else:
-            output_line += interview_dict['AI'][state]
-        output_line += interview_dict['Client'][state] + '\n\n'
-        output.append(output_line)
-    return output
+# def print_interview(interview_dict: dict):
+#     output = []
+#     pipeline = ['О1', 'Д1', 'О2', 'Д2', 'О3', 'Д3', 'О4', 'Д4', 'О5', 'Д5']
+#     for state in pipeline:
+#         output_line = ''
+#         if 'О' in state:
+#             output_line += interview_dict['AI'][state] + '\n'
+#         else:
+#             output_line += interview_dict['AI'][state]
+#         output_line += interview_dict['Client'][state] + '\n\n'
+#         output.append(output_line)
+#     return output
 
 def print_question(question, state):
     '''
@@ -71,10 +75,12 @@ def print_question(question, state):
     dict_fully_questions = {'О1':str_0, 'Д1':str_1, 'О2':str_0, 'Д2':str_1, 'О3':str_0, 'Д3':str_1, 'О4':str_0, 'Д4':str_1, 'О5':str_0, 'Д5':str_1}
     return dict_fully_questions[state]+'\n'+'Заглушка для вопроса\nВопрос: ' + question
 
-# TODO: переписать через хэх текущего времени
-def generate_token(length=32):
-    alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+def generate_token():
+    return hashlib.md5(str(datetime.now()).encode()).hexdigest()
+    # alphabet = string.ascii_letters + string.digits
+    # return ''.join(secrets.choice(alphabet) for _ in range(length))
+
 
 def print_table(table_list,columns_list):
     '''

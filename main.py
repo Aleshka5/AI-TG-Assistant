@@ -1,13 +1,21 @@
 import telebot
 import re
 from src import db
+from src.ai_functools import just_chat
 from src.bot_interviewer import interview, get_interviews_titles, get_log_interview
 from src.tools import print_welcome, print_user_not_founded, print_hi_chat, print_no_parsed_data
-from config import (keyboard_hi, keyboard_admin,limit_text_len, USER_NOT_FOUNDED, NEW_USER_UNKNOWN_INPUT, TEXT_LEN_LIMIT_ERROR)
+from config import (keyboard_hi, keyboard_admin, limit_text_len, USER_NOT_FOUNDED, NEW_USER_UNKNOWN_INPUT,
+                    TEXT_LEN_LIMIT_ERROR, BAN_APOLOGISE, TOKEN_TRY_AGAIN)
 
-def bot_start(token):
+def bot_start(tg_token: str, ai_token: str):
+    '''
+    Функция запускает сервис для работы телеграм бота-интервьюера.
+    :param tg_token: Токен для Telegram бота.
+    :param ai_token: Токен для Open AI Chat-GPT-3.5-Turbo.
+    :return:
+    '''
     telebot.apihelper.ENABLE_MIDDLEWARE = True
-    bot = telebot.TeleBot(token, parse_mode=None)
+    bot = telebot.TeleBot(tg_token, parse_mode=None)
 
     @bot.message_handler(commands=['chat'])
     def chat_welcome(message):
@@ -22,7 +30,7 @@ def bot_start(token):
         # Проверить на Black list
         if db.user_verification(owner, message.text):
             # Отправить приветствие пользователю
-            bot.send_message(message.chat.id, print_hi_chat(owner=owner))
+            bot.send_message(message.chat.id, print_hi_chat(owner=message.from_user.first_name))
             # Изменить состояние бота
             db.set_bot_state(owner, 'Chat', bot, message)
 
@@ -41,11 +49,13 @@ def bot_start(token):
         if db.user_verification(owner, message.text):
 
             # Вывести приветствие
-            if db.check_position(owner,['admin','company']):
-                bot.send_message(message.chat.id, print_welcome(owner=owner), reply_markup=keyboard_admin)
+            if db.check_position(owner, ['admin', 'company']):
+                bot.send_message(message.chat.id, print_welcome(owner=message.from_user.first_name),
+                                                                reply_markup=keyboard_admin)
 
             else:
-                bot.send_message(message.chat.id, print_welcome(owner=owner), reply_markup=keyboard_hi)
+                bot.send_message(message.chat.id, print_welcome(owner=message.from_user.first_name),
+                                                                reply_markup=keyboard_hi)
             # Изменить состояние бота
             db.set_bot_state(owner, 'Assistant', bot, message)
 
@@ -59,11 +69,11 @@ def bot_start(token):
         verification = db.user_verification(owner, text)
 
         if not verification:
-            bot.send_message(message.chat.id,"Извините, вы были заблокированы за нарушение правил.\nДля разблокировки вам необходимо написать: Вернуться")
+            bot.send_message(message.chat.id,BAN_APOLOGISE)
             return None
 
         # Если мы получили текст возвращения из бана
-        elif isinstance(verification,str):
+        elif isinstance(verification, str):
             bot.send_message(message.chat.id, verification)
             # Зануляем текст, чтобы не использовать процедуру возвращения в качестве ответа на вопрос
             text = None
@@ -86,7 +96,7 @@ def bot_start(token):
             # Проверка введённого токена для интервью
             elif 'Токен:' in text:
 
-                if db.check_token(owner,text[6:].strip()):
+                if db.check_token(owner, text[6:].strip()):
                     if db.set_enable_interview(owner, token=text[6:].strip()):
                         db.set_bot_state(owner, 'Interviewer', bot, message)
                         question = interview(owner)
@@ -95,7 +105,7 @@ def bot_start(token):
                         bot.send_message(message.chat.id, 'Невозможно начать новое интервью.')
 
                 else:
-                    bot.send_message(message.chat.id, "Вы ввели недействитеьный токен или у вас больше одного активного интервью. Попробуйте ещё раз...")
+                    bot.send_message(message.chat.id, TOKEN_TRY_AGAIN)
 
             # Выбираем одно из прошлых интервью
             elif 'Выбрать одно из прошлых интервью.' == text:
@@ -115,7 +125,7 @@ def bot_start(token):
 
             elif 'Имя:' in text:
                 user_name = text[4:].strip().strip('@')
-                token = db.add_token(owner,user_name)
+                token = db.add_token(owner, user_name)
 
                 if token:
                     bot.send_message(message.chat.id, f"Передайте сотруднику\nToken:{token}")
@@ -184,7 +194,13 @@ def bot_start(token):
 
 
         elif bot_state == 'Chat':
-            bot.send_message(message.chat.id, f'Я бы вам ответил на: {text}, но в данный мемент нет связи с API.')
+            # TODO: Убрать захардкоженное название chair
+            bot.send_message(message.chat.id, just_chat(text, token=ai_token))
+            # top3_answers = just_chat(text,'RV_all')
+            # bot.send_message(message.chat.id, top3_answers[0])
+            # bot.send_message(message.chat.id, top3_answers[1])
+            # bot.send_message(message.chat.id, top3_answers[2])
+            # bot.send_message(message.chat.id, f'Я бы вам ответил на: {text}, но в данный мемент нет связи с API.')
 
         else:
             bot.send_message(message.chat.id, NEW_USER_UNKNOWN_INPUT)
@@ -193,16 +209,17 @@ def bot_start(token):
 
     bot.polling()
 
-def main():
-    bot.polling()
 
 if __name__ == '__main__':
     import os
     from pickle import load
-    if os.path.exists('TOKEN.pkl'):
-        with open('TOKEN.pkl','rb') as f:
-            TOKEN = load(f)
-        bot_start(TOKEN)
+
+    if os.path.exists('TOKEN.pkl') and os.path.exists('AI_TOKEN.pkl'):
+        with open('TOKEN.pkl', 'rb') as f:
+            TG_TOKEN = load(f)
+
+        with open('AI_TOKEN.pkl', 'rb') as f:
+            AI_TOKEN = load(f)
+        bot_start(TG_TOKEN,AI_TOKEN)
     else:
         print('Токен не найден...')
-
