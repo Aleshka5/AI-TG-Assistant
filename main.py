@@ -197,7 +197,6 @@ def bot_start(tg_token: str, ai_token: str):
                                              reply_markup=keyboard_hi)
 
                     else:
-                        print()
                         # Вывести кнопки /start
                         if db.check_position(owner, ['admin', 'company']):
                             bot.send_message(message.chat.id, print_log[0]+print_log[1],

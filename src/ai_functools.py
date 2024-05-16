@@ -12,7 +12,9 @@ from src.parsers import chair_data
 
 @cache
 def load_embedder():
-    elmo = hub.KerasLayer("C:/Users/Aleshka5/Desktop/Git_repos/AI-TG-Assistant/model", trainable=False)
+    # C:/Users/Aleshka5/Desktop/Git_repos/AI-TG-Assistant/model
+    # http://files.deeppavlov.ai/deeppavlov_data/elmo_ru-wiki_600k_steps.tar.gz
+    elmo = hub.KerasLayer("http://files.deeppavlov.ai/deeppavlov_data/elmo_ru-wiki_600k_steps.tar.gz", trainable=False)
     return elmo
 
 
@@ -146,14 +148,14 @@ def gpt_analize(context: str, topic: str, token: str, temp: int = 0.3) -> str:
     print(messages[0]['content'])
     print(messages[1]['content'])
     try:
-        # completion = openai.ChatCompletion.create(
-        #     model="gpt-3.5-turbo",
-        #     messages=messages,
-        #     temperature=temp
-        # )
-        # answer = str(completion.choices[0].message.content)
-        answer = 'Да, это верно на 10 баллов.'
-        print(answer)
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=temp
+        )
+        answer = str(completion.choices[0].message.content)
+        # answer = 'Да, это верно на 10 баллов.'
+        # print(answer)
         return answer
 
     except Exception as ex:
@@ -187,7 +189,7 @@ def ai_analize(interview_id: str, interview_log: str, chair_name: str, token: st
         for i, text in enumerate(top_texts,1):
             context.join(f'Текст {str(i)}: '+text+'\n')
 
-        print('context ', context)
+        print('Context: ', context)
         summary += f'Анализ по вопросу {question_id}: ' + gpt_analize(context, answer, token) + '\n'
 
     print(len(summary))
