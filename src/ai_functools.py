@@ -187,9 +187,9 @@ def ai_analize(interview_id: str, interview_log: str, chair_name: str, token: st
             top_texts = get_similar_texts(answer, get_chairs_list()[0])
 
         for i, text in enumerate(top_texts,1):
-            context.join(f'Текст {str(i)}: '+text+'\n')
+            context = context + f'Текст {str(i)}: '+text+'\n'
 
-        print('Context: ', context)
+        # print('Context: ', context)
         summary += f'Анализ по вопросу {question_id}: ' + gpt_analize(context, answer, token) + '\n'
 
     print(len(summary))
