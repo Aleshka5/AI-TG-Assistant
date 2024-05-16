@@ -1,5 +1,6 @@
+import os
 import sqlite3
-from src.tools import generate_token, print_table
+from src.tools import generate_token, print_table, get_questions
 from dataset import get_dataset_path
 from config import INTERVIEW_BLANK, AI_STATE_ASSISTANT, AI_STATE_CHAT, AI_STATE_INTERVIEWER
 
@@ -91,7 +92,7 @@ def check_token(user_name: str, token: str, cursor=None):
 
 @db_connection
 def set_enable_interview(user_name: str, token: str = None, interview_id: int = None, cursor=None):
-    blank_interview_log = ''.join([message + '\n' for message in INTERVIEW_BLANK])
+    blank_interview_log = ''.join([message + '\n' for message in get_questions()])
     # Проверяем нет ли активного интервью.
     cursor.execute('''SELECT Tokens.interview_enable FROM Employees INNER JOIN Tokens 
                                 ON Employees.id = Tokens.emp_id

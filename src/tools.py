@@ -25,18 +25,6 @@ def print_hi_chat(owner):
     text = f'''Умный чат приветствует вас, {owner}!
 Введи ваш вопрос и я постараюсь на него ответить.'''
     return text
-# def print_list_interviews(client_data):
-#     '''
-#
-#     :param client_data: Профиль клиента.
-#     :return: Выводит меню выбора прошлого интервью.
-#     '''
-#     for query in client_data['Queries'].keys():
-#         pass
-#     if int(query) != 0:
-#         return f'''AI State: Helper\nВаши интервью:{[query for query in client_data['Queries'].keys() if query != '0']}'''
-#     else:
-#         return 'У вас пока не было ни одного интервью.'
 
 
 def print_user_not_founded():
@@ -65,8 +53,6 @@ def print_question(question, state):
 
 def generate_token():
     return hashlib.md5(str(datetime.now()).encode()).hexdigest()
-    # alphabet = string.ascii_letters + string.digits
-    # return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 def print_table(table_list,columns_list):
@@ -112,8 +98,45 @@ def print_table(table_list,columns_list):
         print('')
     return None
 
+
 def get_chairs_list() -> list:
     return [file[:-4] for file in os.listdir('./chairs_data/') if '.txt' in file]
 
+
+def get_questions(folder_path: str = './Blanks/') -> list:
+    blanks = [file for file in os.listdir(folder_path) if 'Blank' in file]
+    questions_dict = {}
+    zero_nine = tuple(map(str, list(range(0, 10))))
+    one_ten = list(map(str, list(range(1, 11))))
+    for n in range(1,len(blanks)+1):
+        with open(f'{folder_path}/Blank_p{n}.txt', 'r') as file:
+            current_line = None
+            for line in file:
+                line = line.strip('\n')
+                if len(line) > 0:
+
+                    # Delete all mark lines
+                    if line.split('\t') == one_ten:
+                        continue
+
+                    # Get a cluster of the questions
+                    if line[0] in zero_nine:
+                        current_line = ''.join([word + ' ' for word in line.split()[1:]])
+                        questions_dict[current_line] = []
+
+                    # Get a question
+                    elif current_line:
+                        questions_dict[current_line].append(line)
+
+    question_number = 0
+    questions = []
+    for key, items in questions_dict.items():
+        question_number += 1
+        for item in items:
+            questions.append(
+                f'{question_number}. Тема вопроса: {key}. {item}. Дайте оценку от 1 до 10 и опишите своё решение письменным комментарием.')
+            questions.append('Ответ:None.')
+    return questions
+
 if __name__ == '__main__':
-    get_chairs_list()
+    print(get_questions())
