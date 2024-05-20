@@ -237,7 +237,6 @@ def ai_analize(interview_id: str, interview_log: str, chair_name: str, token: st
             context = context + f'Текст {str(i)}: '+text+'\n'
 
         print('Text 3: ', top_texts)
-        print('Context: ', len(context))
         summary += f'Анализ по вопросу {question_id}: ' + gpt_analize(context, answer, token) + '\n'
 
     print(len(summary))
