@@ -75,7 +75,7 @@ def print_table(table_list,columns_list):
                 max = len(str(table_list[raw][column]))
                 if max > raw_limit:
                     max = raw_limit
-                    table_list[raw][column] = str(table_list[raw][column])[:raw_limit-3] + '...'
+                    table_list[raw][column] = str(table_list[raw][column])[:raw_limit-3].replace('\n',' ') + '...'
         if max < len(str(columns_list[column])):
             max = len(str(columns_list[column]))
 

@@ -265,6 +265,7 @@ def select_all(cursor=None):
     response = cursor.fetchall()
     column_names = [description[0] for description in cursor.description]
     print_table(response, column_names)
+    return response
 
 @db_connection
 def set_bot_state(user_name, new_state, bot, message, cursor=None):
@@ -304,6 +305,7 @@ def update_chair_name(user_name: str, chair_name:str, cursor=None):
     return None
 
 if __name__ == '__main__':
-    init()
-    write_analyze(1,None)
+    # init()
+    # write_analyze(1,None)
     select_all()
+
