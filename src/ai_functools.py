@@ -12,13 +12,24 @@ from src.parsers import chair_data
 
 @cache
 def load_embedder():
+    '''
+    Загрузка модели ембеддинга
+    :return:
+    '''
     # C:/Users/Aleshka5/Desktop/Git_repos/AI-TG-Assistant/model
     # http://files.deeppavlov.ai/deeppavlov_data/elmo_ru-wiki_600k_steps.tar.gz
-    elmo = hub.KerasLayer("http://files.deeppavlov.ai/deeppavlov_data/elmo_ru-wiki_600k_steps.tar.gz", trainable=False)
+    elmo = hub.KerasLayer("C:/Users/Aleshka5/Desktop/Git_repos/AI-TG-Assistant/model", trainable=False)
     return elmo
 
 
 def __get_similar_texts(texts: list, embeddings: list, phrase: str) -> list:
+    '''
+    Нахождение ближайших к ответу текстов
+    :param texts: части текста документации кафедры
+    :param embeddings: вектора текстов кафедры
+    :param phrase: ответ пользователя
+    :return: (list) список из трёх самых похожих на ответ текстов
+    '''
     input_tensor = tf.convert_to_tensor([phrase, ], dtype=tf.string)
     elmo = load_embedder()
     # Создание вектора переданного ответа
@@ -34,6 +45,11 @@ def __get_similar_texts(texts: list, embeddings: list, phrase: str) -> list:
 
 
 def __texts2embeddings(texts: list) -> list:
+    '''
+    Преобразование текстов в векторы
+    :param texts: список текстов кафедры
+    :return: (list) список векторов текстов
+    '''
     delete_list = [',', ':', '"', '-', ';', '(', ')', 'т.п.', '\n', '/']
 
     for text_id in range(len(texts)):
@@ -46,9 +62,6 @@ def __texts2embeddings(texts: list) -> list:
         texts[text_id] = text
 
     texts = np.array(texts)
-    # texts = np.array([(' '.join(text.split())).replace('"', '').replace('-', '').replace(',', '').replace(';','')
-    #                  .replace(':', '').replace('(', '').replace(')', '').replace('т.п.', '').replace('\n', '')
-    #                   for text in texts])
 
     elmo = load_embedder()
     embeddings_list = []
@@ -62,7 +75,13 @@ def __texts2embeddings(texts: list) -> list:
     return embeddings_list
 
 
-def __get_embeddings(filename: str, texts: list):
+def __get_embeddings(filename: str, texts: list) -> list:
+    '''
+    Функция чтения ембеддингов из файла, либо расчёта их в реальном времени
+    :param filename: название файла с векторами текстов
+    :param texts: тексты паспорта кафедры
+    :return: (list) список векторов текстов кафедры
+    '''
     if not os.path.exists(f'./chairs_data/{filename}_embeddings.pkl'):
 
         embeddings = __texts2embeddings(texts)
@@ -76,7 +95,13 @@ def __get_embeddings(filename: str, texts: list):
     return embeddings
 
 
-def get_similar_texts(input_question: str, chair_name: str) -> str:
+def get_similar_texts(input_question: str, chair_name: str) -> list:
+    '''
+    Получение 3 похожих текстов
+    :param input_question: входной текст
+    :param chair_name: название кафедры, указанной пользователем
+    :return: (list) список из 3 самых похожих текстов
+    '''
     file_name = chair_name
     with open(f'./chairs_data/{file_name}.txt', 'r', encoding='UTF-8') as file:
         text = file.read().lower()
@@ -92,6 +117,12 @@ def get_similar_texts(input_question: str, chair_name: str) -> str:
 
 
 def __insert_newlines(text: str, max_len: int = 170) -> str:
+    '''
+    Обрезает строку до нужной длинны
+    :param text: входная строка
+    :param max_len: максимальная длинна
+    :return: выходная строка
+    '''
     words = text.split()
     lines = []
     current_line = ""
@@ -105,6 +136,13 @@ def __insert_newlines(text: str, max_len: int = 170) -> str:
 
 
 def just_chat(topic: str, token: str, temp: int = 0.3) -> str:
+    '''
+    Функция обращенияя к Chat-GPT для работы в состоянии чата
+    :param topic: тема вопроса
+    :param token: токен для аккаунта Open-AI
+    :param temp: параметр большой языковой модели
+    :return: (str) ответ полученный от Chat-GPT
+    '''
     openai.api_key = token
 
     messages = [
@@ -134,7 +172,15 @@ EFQM и Excellence Model. Если вопрос не по теме ответь 
         print('Проверьте доступ к API либо подождите, возможно сейчас модель перегружена запросами.')
         return "Error: Проверьте доступ к API либо подождите, возможно сейчас модель перегружена запросами."
 
+
 def gpt_analize(context: str, topic: str, token: str, temp: int = 0.3) -> str:
+    '''
+    Функция обращенияя к Chat-GPT для работы в состоянии чата
+    :param topic: тема вопроса
+    :param token: токен для аккаунта Open-AI
+    :param temp: параметр большой языковой модели
+    :return: (str) ответ полученный от Chat-GPT
+    '''
     openai.api_key = token
 
     messages = [
@@ -186,10 +232,12 @@ def ai_analize(interview_id: str, interview_log: str, chair_name: str, token: st
         else:
             top_texts = get_similar_texts(answer, get_chairs_list()[0])
 
-        for i, text in enumerate(top_texts,1):
-            context.join(f'Текст {str(i)}: '+text+'\n')
 
-        print('Context: ', context)
+        for i, text in enumerate(top_texts,1):
+            context = context + f'Текст {str(i)}: '+text+'\n'
+
+        print('Text 3: ', top_texts)
+        print('Context: ', len(context))
         summary += f'Анализ по вопросу {question_id}: ' + gpt_analize(context, answer, token) + '\n'
 
     print(len(summary))

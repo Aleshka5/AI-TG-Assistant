@@ -61,7 +61,6 @@ def bot_start(tg_token: str, ai_token: str):
             # Изменить состояние бота
             db.set_bot_state(owner, 'Assistant', bot, message)
 
-    # TODO:Добавить выбор кафедры, к которой принадлежит пользователь
     @bot.message_handler(content_types='text')
     def get_any_message(message):
         db.init()
@@ -106,17 +105,19 @@ def bot_start(tg_token: str, ai_token: str):
 
             # Проверка введённого токена для интервью
             elif 'Токен:' in text:
+                if db.get_chair_name(owner):
+                    if db.check_token(owner, text[6:].strip()):
+                        if db.set_enable_interview(owner, token=text[6:].strip()):
+                            db.set_bot_state(owner, 'Interviewer', bot, message)
+                            question = interview(owner)
+                            bot.send_message(message.chat.id, question)
+                        else:
+                            bot.send_message(message.chat.id, 'Невозможно начать новое интервью.')
 
-                if db.check_token(owner, text[6:].strip()):
-                    if db.set_enable_interview(owner, token=text[6:].strip()):
-                        db.set_bot_state(owner, 'Interviewer', bot, message)
-                        question = interview(owner)
-                        bot.send_message(message.chat.id, question)
                     else:
-                        bot.send_message(message.chat.id, 'Невозможно начать новое интервью.')
-
+                        bot.send_message(message.chat.id, TOKEN_TRY_AGAIN)
                 else:
-                    bot.send_message(message.chat.id, TOKEN_TRY_AGAIN)
+                    bot.send_message(message.chat.id, 'Не удалось определить вашу кафедру. Введите данные и попробуте снова...')
 
             # Выбираем одно из прошлых интервью
             elif 'Выбрать одно из прошлых интервью.' == text:
@@ -175,7 +176,6 @@ def bot_start(tg_token: str, ai_token: str):
                     bot.send_message(message.chat.id, 'Это интервью было завершено.')
 
             elif 'Выбрать завершённое интервью' in text:
-                # TODO: Вывод всего интервью.
                 pattern = r"^(.*?)\."
                 match = re.search(pattern, text)
 
@@ -235,7 +235,6 @@ def bot_start(tg_token: str, ai_token: str):
 
 
         elif bot_state == 'Chat':
-            # TODO: Убрать захардкоженное название chair
             bot.send_message(message.chat.id, just_chat(text, token=ai_token))
             # top3_answers = just_chat(text,'RV_all')
             # bot.send_message(message.chat.id, top3_answers[0])
