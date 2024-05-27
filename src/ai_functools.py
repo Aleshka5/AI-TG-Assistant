@@ -82,14 +82,14 @@ def __get_embeddings(filename: str, texts: list) -> list:
     :param texts: тексты паспорта кафедры
     :return: (list) список векторов текстов кафедры
     '''
-    if not os.path.exists(f'./chairs_data/{filename}_embeddings.pkl'):
+    if not os.path.exists(f'../chairs_data/{filename}_embeddings.pkl'):
 
         embeddings = __texts2embeddings(texts)
-        with open(f'./chairs_data/{filename}_embeddings.pkl', 'wb') as file:
+        with open(f'../chairs_data/{filename}_embeddings.pkl', 'wb') as file:
             pkl.dump(embeddings, file)
 
     else:
-        with open(f'./chairs_data/{filename}_embeddings.pkl', 'rb') as file:
+        with open(f'../chairs_data/{filename}_embeddings.pkl', 'rb') as file:
             embeddings = pkl.load(file)
 
     return embeddings
@@ -103,7 +103,7 @@ def get_similar_texts(input_question: str, chair_name: str) -> list:
     :return: (list) список из 3 самых похожих текстов
     '''
     file_name = chair_name
-    with open(f'./chairs_data/{file_name}.txt', 'r', encoding='UTF-8') as file:
+    with open(f'../chairs_data/{file_name}.txt', 'r', encoding='UTF-8') as file:
         text = file.read().lower()
     # Предобработка данных кафедры
     texts = chair_data(text)
@@ -194,14 +194,13 @@ def gpt_analize(context: str, topic: str, token: str, temp: int = 0.3) -> str:
     print(messages[0]['content'])
     print(messages[1]['content'])
     try:
-        completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            temperature=temp
-        )
-        answer = str(completion.choices[0].message.content)
-        # answer = 'Да, это верно на 10 баллов.'
-        # print(answer)
+        # completion = openai.ChatCompletion.create(
+        #     model="gpt-3.5-turbo",
+        #     messages=messages,
+        #     temperature=temp
+        # )
+        # answer = str(completion.choices[0].message.content)
+        answer = 'Да, это верно на 10 баллов.'
         return answer
 
     except Exception as ex:
@@ -243,9 +242,31 @@ def ai_analize(interview_id: str, interview_log: str, chair_name: str, token: st
     if len(summary) < 10000:
         db.write_analyze(interview_id, summary)
 
+def real_time_analize(answer: str, chair_name: str, token: str):
+
+    context = ''
+    if 'Ответ:' in answer:
+        answer = answer[6:]
+
+    if chair_name in get_chairs_list():
+        top_texts = get_similar_texts(answer, chair_name)
+
+    else:
+        top_texts = get_similar_texts(answer, get_chairs_list()[0])
+
+
+    for i, text in enumerate(top_texts,1):
+        context = context + f'Текст {str(i)}: '+text+'\n'
+
+    analise = gpt_analize(context, answer, token)
+    print('Топ тексты: ', top_texts)
+    print('Анализ по вопросу:',analise)
+    return top_texts, analise
+
 
 if __name__ == '__main__':
     file_name = 'Design'
+    print(real_time_analize('Сасай?', file_name, token='your_token'))
     # with open(f'../chairs_data/{file_name}.txt', 'r', encoding='UTF-8') as file:
     #     text = file.read().lower()
     # # Предобработка данных кафедры
@@ -253,7 +274,7 @@ if __name__ == '__main__':
     # Преобразование/Считываение данных кафедр в векторы
     # embeddings = get_embeddings(file_name,texts)
     # Получение наиболее нужных текстов по кафедре
-    top_texts = get_similar_texts('Выпускники устраиваются на работу.', file_name)
-    print(top_texts)
+    # top_texts = get_similar_texts('Выпускники устраиваются на работу.', file_name)
+    # print(top_texts)
 
     # just_chat('Расскажи мне, как лучше развивать персонал на кафедре ВМСС?')

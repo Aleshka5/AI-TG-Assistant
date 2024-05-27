@@ -100,7 +100,7 @@ def print_table(table_list,columns_list):
 
 
 def get_chairs_list() -> list:
-    return [file[:-4] for file in os.listdir('./chairs_data/') if '.txt' in file]
+    return [file[:-4] for file in os.listdir('../chairs_data/') if '.txt' in file]
 
 
 def get_questions(folder_path: str = './Blanks/') -> list:
