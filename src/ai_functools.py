@@ -18,7 +18,7 @@ def load_embedder():
     '''
     # C:/Users/Aleshka5/Desktop/Git_repos/AI-TG-Assistant/model
     # http://files.deeppavlov.ai/deeppavlov_data/elmo_ru-wiki_600k_steps.tar.gz
-    elmo = hub.KerasLayer("C:/Users/Aleshka5/Desktop/Git_repos/AI-TG-Assistant/model", trainable=False)
+    elmo = hub.KerasLayer("http://files.deeppavlov.ai/deeppavlov_data/elmo_ru-wiki_600k_steps.tar.gz", trainable=False)
     return elmo
 
 
@@ -194,13 +194,13 @@ def gpt_analize(context: str, topic: str, token: str, temp: int = 0.3) -> str:
     print(messages[0]['content'])
     print(messages[1]['content'])
     try:
-        # completion = openai.ChatCompletion.create(
-        #     model="gpt-3.5-turbo",
-        #     messages=messages,
-        #     temperature=temp
-        # )
-        # answer = str(completion.choices[0].message.content)
-        answer = 'Да, это верно на 10 баллов.'
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=temp
+        )
+        answer = str(completion.choices[0].message.content)
+        # answer = 'Да, это верно на 10 баллов.'
         return answer
 
     except Exception as ex:
