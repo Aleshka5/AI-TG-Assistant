@@ -112,7 +112,13 @@ def chair_data(full_text: str) -> list:
 
 if __name__ == '__main__':
     filename = 'TOE'
+
     with open(f'../chairs_data/{filename}.txt', 'r', encoding='UTF-8') as file:
         text = file.read().lower()
-    with open(f'../chairs_data/{filename}_for_LLM.pkl', 'wb') as file:
-        pkl.dump(text,file)
+    # Предобработка данных кафедры
+    texts = chair_data(text)
+    print(len(texts))
+    # with open(f'../chairs_data/{filename}.txt', 'r', encoding='UTF-8') as file:
+    #     text = file.read().lower()
+    # with open(f'../chairs_data/{filename}_for_LLM.pkl', 'wb') as file:
+    #     pkl.dump(text,file)

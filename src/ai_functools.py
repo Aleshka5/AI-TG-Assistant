@@ -82,14 +82,14 @@ def __get_embeddings(filename: str, texts: list) -> list:
     :param texts: тексты паспорта кафедры
     :return: (list) список векторов текстов кафедры
     '''
-    if not os.path.exists(f'../chairs_data/{filename}_embeddings.pkl'):
+    if not os.path.exists(f'./chairs_data/{filename}_embeddings.pkl'):
 
         embeddings = __texts2embeddings(texts)
-        with open(f'../chairs_data/{filename}_embeddings.pkl', 'wb') as file:
+        with open(f'./chairs_data/{filename}_embeddings.pkl', 'wb') as file:
             pkl.dump(embeddings, file)
 
     else:
-        with open(f'../chairs_data/{filename}_embeddings.pkl', 'rb') as file:
+        with open(f'./chairs_data/{filename}_embeddings.pkl', 'rb') as file:
             embeddings = pkl.load(file)
 
     return embeddings
@@ -103,7 +103,7 @@ def get_similar_texts(input_question: str, chair_name: str) -> list:
     :return: (list) список из 3 самых похожих текстов
     '''
     file_name = chair_name
-    with open(f'../chairs_data/{file_name}.txt', 'r', encoding='UTF-8') as file:
+    with open(f'./chairs_data/{file_name}.txt', 'r', encoding='UTF-8') as file:
         text = file.read().lower()
     # Предобработка данных кафедры
     texts = chair_data(text)
@@ -254,7 +254,6 @@ def real_time_analize(answer: str, chair_name: str, token: str):
     else:
         top_texts = get_similar_texts(answer, get_chairs_list()[0])
 
-
     for i, text in enumerate(top_texts,1):
         context = context + f'Текст {str(i)}: '+text+'\n'
 
@@ -266,7 +265,6 @@ def real_time_analize(answer: str, chair_name: str, token: str):
 
 if __name__ == '__main__':
     file_name = 'Design'
-    print(real_time_analize('Сасай?', file_name, token='your_token'))
     # with open(f'../chairs_data/{file_name}.txt', 'r', encoding='UTF-8') as file:
     #     text = file.read().lower()
     # # Предобработка данных кафедры
